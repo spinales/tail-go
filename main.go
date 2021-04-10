@@ -1,19 +1,32 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"io/ioutil"
 	"os"
+	"strconv"
 	"strings"
 )
 
-const defalt int = 10
-
-var num int
+var (
+	num     int
+	numbers string // -n
+	err     error
+)
 
 func main() {
-	// flag.IntVar(&num, "n", 0, "")
-	// flag.Parse()
+	// flag.IntVar(&num, "n", 0, `This option shall be equivalent to -c number, except the starting location in the
+	// file shall be measured in lines instead of bytes. The origin for counting shall be 1; that is, -n +1 represents
+	// the first line of the file, -n -1 the last.
+
+	// If neither -c nor -n is specified, -n 10 shall be assumed.`)
+	flag.StringVar(&numbers, "n", "", `This option shall be equivalent to -c number, except the starting location in the 
+	file shall be measured in lines instead of bytes. The origin for counting shall be 1; that is, -n +1 represents 
+	the first line of the file, -n -1 the last.
+	
+	If neither -c nor -n is specified, -n 10 shall be assumed.`)
+	flag.Parse()
 
 	fi, err := os.Stdin.Stat()
 	if err != nil {
@@ -21,7 +34,7 @@ func main() {
 	}
 
 	if fi.Mode()&os.ModeNamedPipe == 0 {
-		fmt.Fprint(os.Stderr, "No ha datos para recibir")
+		fmt.Fprint(os.Stderr, "No hay datos para recibir")
 		os.Exit(1)
 	}
 	bytes, err := ioutil.ReadAll(os.Stdin)
@@ -35,11 +48,28 @@ func main() {
 }
 
 func print(data []string) {
-	if len(data) < 10 {
-		fmt.Println(strings.Join(data, "\n"))
+	switch numbers {
+	case "":
+		num = 10
+	case "+1":
+		fmt.Println(data[0])
 		os.Exit(0)
+	case "-1":
+		fmt.Println(data[len(data)-1])
+		os.Exit(0)
+	default:
+		num, err = strconv.Atoi(numbers)
+		if err != nil {
+			panic(err)
+		}
 	}
 
-	// print default len
-	fmt.Println(strings.Join(data[:len(data)-defalt], "\n"))
+	switch {
+	case num < len(data):
+		fmt.Println(strings.Join(data[:len(data)-num], "\n"))
+	default:
+		fmt.Println(strings.Join(data, "\n"))
+	}
+
+	os.Exit(0)
 }
