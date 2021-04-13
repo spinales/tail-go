@@ -14,10 +14,19 @@ var (
 	num     int
 	numbers string // -n
 	f       string // -f
+	c       string // -c
 	err     error
 )
 
 func main() {
+	flag.StringVar(&c, "c", "", `The application shall ensure that the number option-argument is a decimal 
+	integer whose sign affects the location in the file, measured in bytes, to begin the copying:
+		Sign	Copying Starts
+		+	Relative to the beginning of the file.
+		-	Relative to the end of the file.
+		none	Relative to the end of the file.
+					   
+	The origin for counting shall be 1; that is, -c +1 represents the first byte of the file, -c -1 the last.`)
 	flag.StringVar(&f, "f", "", `If the input file is a regular file or if the file operand specifies a FIFO, do not 
 	terminate after the last line of the input file has been copied, but read and copy further bytes from the input 
 	file when they become available. If no file operand is specified and standard input is a pipe, the -f option 
@@ -55,9 +64,30 @@ func main() {
 		panic(err)
 	}
 
+	if c != "" {
+		numbersByte(bytes)
+		os.Exit(0)
+	}
+
 	arr := strings.Split(string(bytes), "\n")
 
 	print(arr)
+}
+
+func numbersByte(data []byte) {
+	numb, err := strconv.Atoi(c[1:])
+	if err != nil {
+		panic(err)
+	}
+
+	switch {
+	case strings.Contains(c, "+"):
+		fmt.Println(string(data[numb-1:]))
+	case strings.Contains(c, "-"):
+		fmt.Println(string(data[len(data)-numb:]))
+	default:
+		fmt.Println(string(data[len(data)-numb:]))
+	}
 }
 
 func fifo(file string) []string {
